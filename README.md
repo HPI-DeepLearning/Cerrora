@@ -132,7 +132,10 @@ You find the key here: [Authorize page](https://wandb.ai/authorize)
 
 ## Inferencing
 
-To create forecasts, adjust the dataset and checkpoint paths in `forecast.sh`, then run the script.
+To just run inference with the pretrained Cerrora model available on Hugging Face, you can 
+adjust the dataset paths in `forecast_hf.sh`, and run the script.
+To create forecasts based on a trained local model, adjust the dataset and checkpoint paths in 
+`forecast.sh`, then run the script.
 For evaluating the forecasts, use our forked WeatherBench2 repository: [MISSING LINK]
 
 ## License

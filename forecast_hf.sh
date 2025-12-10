@@ -13,7 +13,6 @@ DATASET="cerra_with_boundaries"  # Use "cerra" if not using boundaries
 # The output_dir should be changed to your desired output path
 DATASET_PATH="/mnt/ssd/datasets/cerra_2022.zarr"
 BOUNDARY_DATASET_PATH="/mnt/ssd/datasets/hres_forecasts_2022_projected.zarr/"
-CHECKPOINT_PATH="/mnt/ssd/trained_aurora_models_on_cerra/Aurora_large_6h_rollout_boundaries_final/aurora-Aurora-rollout_long-step15000-best.ckpt"
 OUTPUT_DIR="/mnt/ssd/datasets/forecast_aurora_6h_rollout_long_w_boundaries_final.zarr/"
 
 rm -rf "$OUTPUT_DIR"
@@ -23,17 +22,12 @@ rm -rf "$OUTPUT_DIR"
 # compute_forecast_rmse.py script, we set this to False. When we plan to evaluate using
 # the WB2 evaluation scripts, we set this to True.
 # Comment the dataset.common.boundary_path line out if not using boundaries.
-# To use a HuggingFace checkpoint instead of a local one, set task.load_from_hf to True,
-# and adjust task.hf_repo and task.hf_checkpoint accordingly
 python main.py --config-name forecast \
-    task.load_from_hf=False \
+    task.load_from_hf=True \
     task.hf_repo="HPI-MML/cerrora" \
     task.hf_checkpoint="cerrora-rollout.ckpt" \
     task.distributed=False \
     task.model_name=Aurora \
-    task.use_activation_checkpointing=False \
-    task.use_torch_compile=False \
-    task.checkpoint_path=$CHECKPOINT_PATH \
     task.output_dir=$OUTPUT_DIR \
     task.use_wb2_format=True \
     task.lead_times="[6,12,18,24,30]" \
