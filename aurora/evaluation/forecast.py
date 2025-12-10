@@ -129,14 +129,19 @@ def forecast(model, cfg, device):
     else:
         local_rank = 0
 
-    ckpt_path = cfg.task.checkpoint_path
-    try:
-        _, _ = load_checkpoint(local_rank, model, None, None, None, ckpt_path)
+    # load checkpoint either from HF or local path
+    if cfg.task.load_from_hf:
+        model.load_checkpoint(cfg.task.hf_repo, cfg.task.hf_checkpoint, strict=True)
+        print(f"Loaded model checkpoint from HF: {cfg.task.hf_repo} - {cfg.task.hf_checkpoint}")
+    else:
+        ckpt_path = cfg.task.checkpoint_path
+        try:
+            _, _ = load_checkpoint(local_rank, model, None, None, None, ckpt_path)
 
-        if cfg.task.distributed:
-            dist.barrier()
-    except RuntimeError as e:
-        raise RuntimeError(f"Error loading checkpoint: {e}")
+            if cfg.task.distributed:
+                dist.barrier()
+        except RuntimeError as e:
+            raise RuntimeError(f"Error loading checkpoint: {e}")
 
     lead_times = cfg.task.lead_times
     max_lead_time = max(lead_times)

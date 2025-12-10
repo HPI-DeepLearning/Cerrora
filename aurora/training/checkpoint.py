@@ -100,6 +100,16 @@ def load_checkpoint(rank, model, optimizer, scheduler, scaler, ckpt_path, strict
 
     checkpoint = object_list[0]
 
+    # If model is missing in checkpoint, that means it is a final checkpoint, e.g., only model weights were saved
+    if "model" not in checkpoint:
+        assert optimizer is None or not load_optimizer_state, "Optimizer state requested but not found in checkpoint."
+        assert scheduler is None, "Scheduler state requested but not found in checkpoint."
+        assert scaler is None, "Scaler state requested but not found in checkpoint."
+
+        model.load_state_dict(checkpoint, strict=strict)
+        print(f"Rank {rank}: Loaded final model checkpoint from {ckpt_path}")
+        return 0, 0  # epoch, global_step
+
     if isinstance(model, DistributedDataParallel):
         model.module.load_state_dict(checkpoint["model"], strict=strict)
     else:

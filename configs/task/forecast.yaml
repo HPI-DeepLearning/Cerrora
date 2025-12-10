@@ -8,6 +8,9 @@ use_torch_compile: False  # Turn on for faster training, but initialization is s
 
 # Attributes for forecast task
 lead_times: [24]  # Lead times to compute in hours
+load_from_hf: False  # Whether to load the model from Hugging Face
+hf_repo: "HPI-MML/cerrora"
+hf_checkpoint: "cerrora-rollout.ckpt"
 checkpoint_path: ???  # Path to the checkpoint file
 output_dir: ???  # Path to the output directory
 use_wb2_format: True  # Use a WeatherBench2-compatible format
