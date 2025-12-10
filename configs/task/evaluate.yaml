@@ -1,0 +1,5 @@
+task: "evaluate"
+forecast_data_path: ???
+use_latitude_weighting: True
+save_csv: False
+csv_save_path: null

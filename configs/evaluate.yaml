@@ -1,0 +1,14 @@
+defaults:
+  - dataset: cerra
+  - task: evaluate
+  - _self_
+
+dataset:
+  common:
+    static_vars: []  # No reason to load static vars as they are not predicted
+    surf_vars: ["2t","10u","10v","msl"]
+    atmos_vars: ["z","u","v","t","q"]
+    normalize: False  # We want to evaluate on the raw values
+    rollout_steps: 0
+    use_evaluation_mode: True
+    no_xarray: False  # no_xarray doesn't work with evaluation mode

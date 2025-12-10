@@ -1,0 +1,33 @@
+input_surf_vars:
+  - "2t"
+  - "10u"
+  - "10v"
+  - "msl"
+output_surf_vars:
+  - "2t"
+  - "10u"
+  - "10v"
+  - "msl"
+input_atmos_vars:
+  - "z"
+  - "u"
+  - "v"
+  - "t"
+  - "q"
+output_atmos_vars:
+  - "z"
+  - "u"
+  - "v"
+  - "t"
+  - "q"
+static_vars:
+  - "lsm"
+  - "z"
+  - "slt"
+drop_path: 0.0 # Change to 0.2 for pretraining
+patch_size: 8 # Default from paper 4
+lead_time_hours: ${dataset.common.lead_time_hours}
+use_lora: False
+lora_mode: single # "single" uses the same LoRA for all roll-out steps, and "all" uses a different LoRA for every roll-out step.
+lora_steps: 1
+autocast: True

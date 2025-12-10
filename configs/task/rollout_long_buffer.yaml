@@ -1,0 +1,19 @@
+# Common attributes for all tasks
+task: "train"  # Can be "train" or "forecast"
+model_name: "AuroraSmall"  # Change this to "AuroraSmall" or "Aurora" as needed
+distributed: False
+use_activation_checkpointing: True
+checkpoint_encoder_decoder: False
+use_torch_compile: False  # Turn on for faster training, but initialization is slower
+
+# Attributes for training task
+phase: "rollout_long_buffer" # Can be "pretraining", "finetuning", "rollout_short", "rollout_long_buffer", "rollout_long"
+total_steps: 20000
+max_rollout_steps: 5
+buffer_size: 200
+refresh_freq: 10
+
+# Number of steps to rollout depending on the current training step, given as a list of [step, rollout_length]
+# For now not supported for rollout_long_buffer, so we immediately rollout 5 steps
+rollout_curriculum:
+  - [0, 5]

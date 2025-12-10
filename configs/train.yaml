@@ -1,0 +1,29 @@
+defaults:
+  - task: finetuning
+  - dataset: dummy_debug
+  - model: standard_Aurora
+  - variable_weights: finetuning
+  - _self_
+
+dataloader:
+  batch_size: 1
+  num_workers: 4
+  prefetch_factor: 2
+optimizer:
+  weight_decay: 5e-6
+  constant_lr: 1e-4
+lr_scheduler:
+  warmup_steps: 1000
+  start_lr: 5e-4
+  final_lr: 5e-5
+checkpoint:
+  ckpt_dir: "./checkpoints"
+  ckpt_file: "aurora-0.25-small-pretrained.ckpt"
+  continue_training: False
+  reset_steps: False  # Set to True if you want to reset the training steps
+validation:
+  validation_interval: 3000
+logging:
+  use_wandb: True
+  project_name: "aurora_project"
+  group_name: "finetuning" # for wandb

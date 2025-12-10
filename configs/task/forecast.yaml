@@ -1,0 +1,19 @@
+# Common attributes for all tasks
+task: "forecast"  # Can be "train" or "forecast"
+model_name: "AuroraSmall"  # Change this to "AuroraSmall" or "Aurora" as needed
+distributed: False
+use_activation_checkpointing: True
+checkpoint_encoder_decoder: False
+use_torch_compile: False  # Turn on for faster training, but initialization is slower
+
+# Attributes for forecast task
+lead_times: [24]  # Lead times to compute in hours
+checkpoint_path: ???  # Path to the checkpoint file
+output_dir: ???  # Path to the output directory
+use_wb2_format: True  # Use a WeatherBench2-compatible format
+save_fp64: False  # Save variables in float64 format
+max_rollout_steps: 0  # No need to return targets when using the model for forecasting
+
+# Attributes to specify whats saved in the forecast zarr file
+save_variables: ["t", "z", "u", "v", "q", "msl", "2t", "10u", "10v", "tp"]  # Variables to save
+save_levels: [500, 700, 850]  # Pressure levels to save

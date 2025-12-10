@@ -1,0 +1,15 @@
+defaults:
+  - task: forecast
+  - dataset: dummy_debug
+  - model: standard_Aurora
+  - _self_
+
+# Use evaluation mode for forecasting
+dataset:
+  common:
+    no_xarray: False
+
+dataloader:
+  batch_size: 1
+  num_workers: 4
+  prefetch_factor: 2
