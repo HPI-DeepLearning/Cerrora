@@ -2,6 +2,7 @@
 
 This repository contains the code to train Cerrora, a weather model based on 
 Microsoft's Aurora foundation model.
+You can find the trained model weights on [Hugging Face](https://huggingface.co/HPI-MML/cerrora).
 It is a fork of the [Microsoft Aurora repository](https://github.com/microsoft/aurora).
 The Aurora model is a foundation model for atmospheric forecasting, which we finetune 
 on the CERRA regional reanalysis dataset to predict weather in the European region. 
