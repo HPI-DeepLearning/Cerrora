@@ -5,10 +5,9 @@ export OMP_NUM_THREADS=4
 
 # Config options - should remain fixed for now
 MODEL="standard_Aurora"
-DATASET="cerra_with_boundaries"  # Use "cerra" if not using boundaries
+DATASET="cerra_with_boundaries"
 
 # Paths - change these to your paths
-# The dataset_path is already correct for the fb10dl03 node
 # The checkpoint_path currently points to the rollout trained model with boundaries
 # The output_dir should be changed to your desired output path
 DATASET_PATH="/mnt/ssd/datasets/cerra_2022.zarr"
@@ -18,6 +17,20 @@ OUTPUT_DIR="/mnt/ssd/datasets/forecast_aurora_6h_rollout_long_w_boundaries_final
 
 rm -rf "$OUTPUT_DIR"
 
+# There are three models available: The 6-hour base model, the rollout-trained model, and the quantized rollout-trained model.
+# The default settings in this script use the rollout model.
+# To use the base model
+# 1. Set CHECKPOINT_PATH to the base model checkpoint
+# 2. Change DATASET to "cerra"
+# 3. Set task.max_rollout_steps=1
+# 4. Set task.lead_times="[6]"
+# 5. Remove the dataset.common.boundary_path and dataset.common.boundary_size lines
+#
+#
+# To use the quantized model
+# 1. Set CHECKPOINT_PATH to the quantized model checkpoint
+# 2. Set task=forecast_quantized instead of task=forecast
+
 # task.use_wb2_format is used to control whether to save in the normal CERRA format or in
 # a format compatible with WeatherBench2 (WB2). When we plan to evaluate using our own
 # compute_forecast_rmse.py script, we set this to False. When we plan to evaluate using
@@ -26,9 +39,8 @@ rm -rf "$OUTPUT_DIR"
 # To use a HuggingFace checkpoint instead of a local one, set task.load_from_hf to True,
 # and adjust task.hf_repo and task.hf_checkpoint accordingly
 python main.py --config-name forecast \
+    task=forecast \
     task.load_from_hf=False \
-    task.hf_repo="HPI-MML/cerrora" \
-    task.hf_checkpoint="cerrora-rollout.ckpt" \
     task.distributed=False \
     task.model_name=Aurora \
     task.checkpoint_path=$CHECKPOINT_PATH \

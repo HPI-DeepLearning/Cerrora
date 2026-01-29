@@ -4,7 +4,7 @@ import pickle
 import numpy as np
 from metpy.calc import dewpoint_from_relative_humidity, specific_humidity_from_dewpoint, height_to_geopotential
 from metpy.units import units
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 from aurora.batch import Batch, Metadata
 import torch
 import math
@@ -12,7 +12,8 @@ import xarray as xr
 import zarr
 
 from datetime import datetime, timezone
-from aurora.data.collate import collate_fn
+import logging
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
 # Mapping from Aurora variable names to CERRA dataset variable names.
@@ -195,11 +196,16 @@ class CerraDataset(Dataset):
         # We changed the default time unit from seconds since 1970-01-01 to nanoseconds since 1970-01-01
         # at some point, so we need to read the metadata to determine the time unit
         metadata_path = data_path + "/.zmetadata"
-        with open(metadata_path, "rb") as f:
-            metadata = json.load(f)
+        is_hf_path = metadata_path.startswith("hf://")
+        if is_hf_path:
+            from huggingface_hub import hffs
+            with hffs.open(metadata_path, "rb") as f:
+                metadata = json.load(f)
+        else:
+            with open(metadata_path, "rb") as f:
+                metadata = json.load(f)
 
         self.time_unit = metadata["metadata"][f"{self.time_dim}/.zattrs"]["units"]
-
         start_timestamp = int(datetime.fromisoformat(start_time).replace(tzinfo=timezone.utc).timestamp())
         end_timestamp = int(datetime.fromisoformat(end_time).replace(tzinfo=timezone.utc).timestamp())
 
@@ -210,7 +216,7 @@ class CerraDataset(Dataset):
             raise ValueError("Time unit must be seconds or nanoseconds since 1970-01-01")
 
         self.start_idx = np.argmax(start_timestamp <= self.data[self.time_dim][:]).item()
-        self.end_idx = np.argmax(end_timestamp < self.data[self.time_dim][:]).item()
+        self.end_idx = np.argmax(end_timestamp <= self.data[self.time_dim][:]).item()
 
         # Make sure that the start and end time are in the dataset
         if start_timestamp < self.data[self.time_dim][:][0]:
@@ -224,7 +230,7 @@ class CerraDataset(Dataset):
             # Convert longitude to the range [-180, 180] regardless of whether the dataset is in [0, 360] or [-180, 180]
             longitudes_neg = ((self.boundary_data["longitude"][0] % 360) + 180) % 360 - 180
 
-            pressure_level_ascending = np.all(self.boundary_data["pressure_level"][:][:-1] < self.boundary_data["pressure_level"][:][1:])
+            pressure_level_descending = np.all(self.boundary_data["pressure_level"][:][:-1] > self.boundary_data["pressure_level"][:][1:])
             latitude_ascending = np.all(self.boundary_data["latitude"][:, 0][:-1] <= self.boundary_data["latitude"][:, 0][1:])
             longitude_ascending = np.all(longitudes_neg[:-1] <= longitudes_neg[1:])
             assert pressure_level_descending, "Use xarray dataset if boundary data pressure levels are not ascending!"
@@ -261,11 +267,16 @@ class CerraDataset(Dataset):
             # We changed the default time unit from seconds since 1970-01-01 to nanoseconds since 1970-01-01
             # at some point, so we need to read the metadata to determine the time unit
             metadata_path = boundary_path + "/.zmetadata"
-            with open(metadata_path, "rb") as f:
-                metadata = json.load(f)
+            is_hf_path = metadata_path.startswith("hf://")
+            if is_hf_path:
+                from huggingface_hub import hffs
+                with hffs.open(metadata_path, "rb") as f:
+                    metadata = json.load(f)
+            else:
+                with open(metadata_path, "rb") as f:
+                    metadata = json.load(f)
 
             self.boundary_time_unit = metadata["metadata"]["time/.zattrs"]["units"]
-
             start_timestamp = int(datetime.fromisoformat(start_time).replace(tzinfo=timezone.utc).timestamp())
             end_timestamp = int(datetime.fromisoformat(end_time).replace(tzinfo=timezone.utc).timestamp())
 
@@ -276,7 +287,7 @@ class CerraDataset(Dataset):
                 raise ValueError("Time unit must be seconds or nanoseconds since 1970-01-01")
 
             self.boundary_start_idx = np.argmax(start_timestamp <= self.boundary_data["time"][:]).item()
-            self.boundary_end_idx = np.argmax(end_timestamp < self.boundary_data["time"][:]).item()
+            self.boundary_end_idx = np.argmax(end_timestamp <= self.boundary_data["time"][:]).item()
 
             # Make sure that the start and end time are in the dataset
             if start_timestamp < self.boundary_data["time"][:][0]:
@@ -596,7 +607,7 @@ class CerraDataset(Dataset):
         # In training mode we return (2 + self.rollout_steps) values per index, so we
         # have to subtract (1 + self.rollout_steps) * self.lead_time_steps from the number of timesteps
         if self.no_xarray:
-            num_steps = (self.end_idx - self.start_idx) - (1 + self.rollout_steps) * self.lead_time_steps
+            num_steps = (1 + self.end_idx - self.start_idx) - (1 + self.rollout_steps) * self.lead_time_steps
         else:
             num_steps = len(self.data[self.time_dim]) - (1 + self.rollout_steps) * self.lead_time_steps
         length = math.ceil(num_steps / self.step_size)

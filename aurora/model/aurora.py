@@ -364,6 +364,10 @@ class Aurora(torch.nn.Module):
 
         d = torch.load(path, map_location=device, weights_only=True)
 
+        # Unwrap possible checkpoint dict.
+        if isinstance(d, dict) and "model" in d:
+            d = d["model"]
+
         # You can safely ignore all cumbersome processing below. We modified the model after we
         # trained it. The code below manually adapts the checkpoints, so the checkpoints are
         # compatible with the new model.

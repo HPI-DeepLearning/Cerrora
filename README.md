@@ -25,82 +25,19 @@ conda activate cerrora
 
 ## Setting up the CERRA dataset
 
-The CERRA dataset is available on the ECMWF's Climate Data Store (CDS). 
-To access the data, you need to create an account on the [CDS website](https://cds.climate.copernicus.eu/).
-Then, you can use our provided `download_cerra.py` script to download the data.
-For this, navigate to the scripts folder and run:
+If you just want to quickly test the pretrained Cerrora models, you can use our provided test data 
+that already contains the necessary preprocessing. They are available on Hugging Face:
+`hf://HPI-MML/cerrora/cerra_excerpt.zarr` for the CERRA data and 
+`hf://HPI-MML/cerrora/hres_forecasts_excerpt.zarr` for the IFS forecasts.
+These datasets contain data for the first 7 days of January 2022.
+They can be used by adjusting the `dataset.common.data_path` and 
+`dataset.common.boundary_path` arguments in the training and inference scripts.
+For the provided `forecast_hf_{$MODEL}.sh` scripts, these paths are already set to 
+the Hugging Face datasets.
 
-```bash
-python download_cerra.py \
---request_template cerra_full.yaml \
---start_year 2022 \
---start_month 1 \
---end_year 2022 \
---end_month 6 \
---outdir /path/to/cerra/data
-```
-
-This will download the CERRA data for the specified time range and save it in the specified output directory.
-After downloading, we need to compute a few derived variables to fit the settings of the Aurora model.
-This for example includes converting 10m wind speed and direction to u and v components.
-To precompute the derived variables, run:
-
-```bash
-python precompute_derived_variables.py \
---src_dir /path/to/cerra/data \
---dst_dir /path/to/updated/data \
---compute_10m_wind \
---compute_relative_humidity \
---compute_specific_humidity \
---compute_geopotential_at_surface
-```
-
-This will create a new dataset in the specified destination directory with the derived variables added.
-Finally, we need to add the soil type information to the dataset, which is not included in the CERRA data.
-We provide a script to interpolate the ERA5 soil type data to the CERRA grid.
-To do this, run:
-
-```bash
-python regrid_slt.py --cerra_zarr_path /path/to/updated/data
-```
-
-## Setting up the boundary conditions
-
-The rollout-trained Cerrora model requires lateral boundary conditions to maintain the forecast quality 
-over longer lead times.
-For this, we use the IFS forecasts provided in WeatherBench2.
-To download the forecasts, navigate to the scripts/rollout folder and run:
-
-```bash
-python download_ifs_forecasts.py \
---start_year 2022 \
---start_month 1 \
---end_year 2022 \
---end_month 6 \
---outdir /path/to/ifs/forecasts
-```
-
-After downloading, we need to regrid the forecasts to the CERRA grid.
-To do this, run:
-```bash
-python create_rollout_boundaries.py \
---global_path /path/to/ifs/forecasts \
---boundary_size 250 \
---num_cores 10 \
---start_time "2022-01-01T00:00:00" \
---end_time "2022-06-30T21:00:00" \
---output_path /path/to/regridded/forecasts
-```
-
-Finally, we need to add the static variables to the regridded forecasts.
-To do this, run:
-```bash
-python add_static_vars_to_rollout_boundaries.py \
---global_path /path/to/ifs/forecasts \
---boundary_size 250 \
---num_cores 10 \
---output_path /path/to/regridded/forecasts
-```
+For full training or inference runs, you need to set up the full CERRA dataset
+and the boundary conditions based on IFS forecasts.
+For this, please follow the [full instructions](data_setup.md). 
 
 ## Training Cerrora
 
@@ -132,10 +69,18 @@ You find the key here: [Authorize page](https://wandb.ai/authorize)
 
 ## Inferencing
 
-To just run inference with the pretrained Cerrora model available on Hugging Face, you can 
-adjust the dataset paths in `forecast_hf.sh`, and run the script.
-To create forecasts based on a trained local model, adjust the dataset and checkpoint paths in 
-`forecast.sh`, then run the script.
+To just run inference with the pretrained Cerrora models available on Hugging Face, you can 
+run `forecast_hf_{$MODEL}.sh {$OUTPUT_PATH}`. This will download the model weights from Hugging Face
+and use the provided test data to create forecasts, which will be saved to the specified output path.
+If you want to use your own data, adjust the dataset and boundary condition paths, as well as the 
+start time and end time in the script accordingly.
+The available models are:
+- `base`: The 6-hour lead time Cerrora model
+- `rollout`: The rollout-trained Cerrora model with boundary conditions
+- `rollout_quantized`: The rollout model quantized to 4-bit weights
+
+To create forecasts based on a trained local model and custom data, adjust the dataset and checkpoint paths in 
+`forecast_local.sh`, then run the script.
 For evaluating the forecasts, use our forked WeatherBench2 repository: [MISSING LINK]
 
 ## License

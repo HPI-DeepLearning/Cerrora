@@ -10,7 +10,7 @@ use_torch_compile: False  # Turn on for faster training, but initialization is s
 lead_times: [6,12,18,24,30]  # Lead times to compute in hours
 load_from_hf: False  # Whether to load the model from Hugging Face
 hf_repo: "HPI-MML/cerrora"
-hf_checkpoint: "cerrora-rollout.ckpt"
+hf_checkpoint: "cerrora-rollout-quantized.ckpt"
 checkpoint_path: ???  # Path to the checkpoint file
 output_dir: ???  # Path to the output directory
 use_wb2_format: True  # Use a WeatherBench2-compatible format
@@ -18,8 +18,15 @@ save_fp64: False  # Save variables in float64 format
 max_rollout_steps: 0  # No need to return targets when using the model for forecasting
 
 # Qunatization parameters (if applicable)
-use_quantized_model: False  # Whether to use a quantized model for forecasting
-quantization_config: null  # Dict with quantization parameters, if using a quantized model
+use_quantized_model: True  # Whether to use a quantized model for forecasting
+quantization_config:
+  # Quantization configuration
+  weight_bits: 4
+  group_size: 32
+  scale_groups: 32
+  output_bits: 4
+  symmetric: False
+  use_shift: True
 
 # Attributes to specify whats saved in the forecast zarr file
 save_variables: ["t", "z", "u", "v", "q", "msl", "2t", "10u", "10v", "tp"]  # Variables to save

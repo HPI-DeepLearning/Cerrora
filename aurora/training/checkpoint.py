@@ -67,10 +67,15 @@ def save_final_checkpoint(model, ckpt_path):
     try:
         # Extract the state dict, handling DistributedDataParallel case
         state_dict = model.module.state_dict() if isinstance(model, DistributedDataParallel) else model.state_dict()
-        
+
+        # Wrap in a checkpoint dict for compatibility
+        checkpoint = {
+            "model": state_dict
+        }
+
         # Save to temporary file first for atomic save
         tmp_path = f"{ckpt_path}.tmp"
-        torch.save(state_dict, tmp_path)
+        torch.save(checkpoint, tmp_path)
         os.replace(tmp_path, ckpt_path)
         
         print(f"Saved final model checkpoint to {ckpt_path}")
@@ -80,7 +85,17 @@ def save_final_checkpoint(model, ckpt_path):
         raise
     
 
-def load_checkpoint(rank, model, optimizer, scheduler, scaler, ckpt_path, strict=True, load_optimizer_state=True):
+def load_checkpoint(
+        rank,
+        model,
+        optimizer,
+        scheduler,
+        scaler,
+        ckpt_path,
+        strict=True,
+        load_optimizer_state=True,
+        load_model_only=False,
+):
     if not os.path.isfile(ckpt_path):
         raise FileNotFoundError(f"Checkpoint not found: {ckpt_path}")
 
@@ -100,20 +115,13 @@ def load_checkpoint(rank, model, optimizer, scheduler, scaler, ckpt_path, strict
 
     checkpoint = object_list[0]
 
-    # If model is missing in checkpoint, that means it is a final checkpoint, e.g., only model weights were saved
-    if "model" not in checkpoint:
-        assert optimizer is None or not load_optimizer_state, "Optimizer state requested but not found in checkpoint."
-        assert scheduler is None, "Scheduler state requested but not found in checkpoint."
-        assert scaler is None, "Scaler state requested but not found in checkpoint."
-
-        model.load_state_dict(checkpoint, strict=strict)
-        print(f"Rank {rank}: Loaded final model checkpoint from {ckpt_path}")
-        return 0, 0  # epoch, global_step
-
     if isinstance(model, DistributedDataParallel):
         model.module.load_state_dict(checkpoint["model"], strict=strict)
     else:
         model.load_state_dict(checkpoint["model"], strict=strict)
+
+    if load_model_only:
+        return
 
     if optimizer is not None and load_optimizer_state:
         # Load optimizer state only if requested
@@ -135,6 +143,6 @@ def load_checkpoint(rank, model, optimizer, scheduler, scaler, ckpt_path, strict
     # Return training state info
     epoch = checkpoint["epoch"]
     global_step = checkpoint["global_step"]
-    print(f"Rank {rank}: Loaded checkpoint from {ckpt_path} (epoch {epoch+1})")
+    print(f"Rank {rank}: Loaded checkpoint from {ckpt_path} (epoch {epoch + 1})")
 
     return epoch, global_step

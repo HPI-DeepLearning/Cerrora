@@ -12,7 +12,6 @@ from aurora.data.utils import get_val_dataloader
 from aurora.training.checkpoint import load_checkpoint
 from aurora.training.train import get_initial_input_batch
 
-
 def save_forecast(inputs, preds, cfg):
     """
     Saves the forecast batch as zarr file in the output directory.
@@ -129,19 +128,30 @@ def forecast(model, cfg, device):
     else:
         local_rank = 0
 
+    if cfg.task.use_quantized_model:
+        print("\nPreparing quantized model...")
+        from aurora.quantization.packing import replace_linear_layers
+        from aurora.quantization.packing import CalibrationArgs
+        args = CalibrationArgs()
+
+        # Quantization configuration
+        args.weight_bits = cfg.task.quantization_config.weight_bits
+        args.group_size = cfg.task.quantization_config.group_size
+        args.scale_groups = cfg.task.quantization_config.group_size
+        args.output_bits = cfg.task.quantization_config.output_bits
+        args.symmetric = cfg.task.quantization_config.symmetric
+        args.use_shift = cfg.task.quantization_config.use_shift
+        model.backbone = replace_linear_layers(model.backbone, args)
+        model.backbone = model.backbone.to(device)
+
     # load checkpoint either from HF or local path
     if cfg.task.load_from_hf:
         model.load_checkpoint(cfg.task.hf_repo, cfg.task.hf_checkpoint, strict=True)
         print(f"Loaded model checkpoint from HF: {cfg.task.hf_repo} - {cfg.task.hf_checkpoint}")
     else:
         ckpt_path = cfg.task.checkpoint_path
-        try:
-            _, _ = load_checkpoint(local_rank, model, None, None, None, ckpt_path)
-
-            if cfg.task.distributed:
-                dist.barrier()
-        except RuntimeError as e:
-            raise RuntimeError(f"Error loading checkpoint: {e}")
+        model.load_checkpoint_local(ckpt_path, strict=True)
+        print(f"Loaded model checkpoint from local path: {ckpt_path}")
 
     lead_times = cfg.task.lead_times
     max_lead_time = max(lead_times)

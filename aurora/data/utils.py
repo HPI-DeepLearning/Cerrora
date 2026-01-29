@@ -40,7 +40,7 @@ def get_train_dataloader(cfg: DictConfig, max_rollout_steps: int) -> DataLoader:
         persistent_workers=True if cfg.dataloader.num_workers > 0 else False,
         multiprocessing_context="forkserver" if cfg.dataloader.num_workers > 0 else None,
         num_workers=cfg.dataloader.num_workers,
-        prefetch_factor=cfg.dataloader.prefetch_factor,
+        prefetch_factor=cfg.dataloader.prefetch_factor if cfg.dataloader.num_workers > 0 else None,
     )
 
     if cfg.task.task == "train" and cfg.task.phase == "rollout_long_buffer":
@@ -87,7 +87,7 @@ def get_val_dataloader(cfg: DictConfig) -> DataLoader:
         persistent_workers=True if cfg.dataloader.num_workers > 0 else False,
         multiprocessing_context="forkserver" if cfg.dataloader.num_workers > 0 else None,
         num_workers=cfg.dataloader.num_workers,
-        prefetch_factor=cfg.dataloader.prefetch_factor,
+        prefetch_factor=cfg.dataloader.prefetch_factor if cfg.dataloader.num_workers > 0 else None,
     )
 
     return val_dataloader
